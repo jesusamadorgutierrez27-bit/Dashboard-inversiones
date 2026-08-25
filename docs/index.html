@@ -10,8 +10,15 @@
   }
   body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 24px 32px;
          background: var(--bg); color: #222; }
+  .top-row { display: flex; justify-content: space-between; align-items: flex-start;
+              flex-wrap: wrap; gap: 12px; }
   h1 { color: var(--primary); margin-bottom: 4px; }
   .subtitle { color: #666; margin-top: 0; margin-bottom: 20px; }
+  .lang-switch { display: flex; gap: 6px; }
+  .lang-btn { padding: 6px 12px; border: 1px solid var(--primary); background: white;
+               color: var(--primary); border-radius: 6px; cursor: pointer; font-size: 12px;
+               font-weight: bold; }
+  .lang-btn.active { background: var(--primary); color: white; }
   .controls { display: flex; flex-wrap: wrap; gap: 24px; align-items: center;
                background: white; padding: 16px 20px; border-radius: 8px;
                border: 1px solid var(--border); margin-bottom: 20px; }
@@ -39,27 +46,36 @@
 </head>
 <body>
 
-<h1>Dashboard de Oportunidades de Inversión</h1>
-<p class="subtitle">Screening cuantitativo multifactorial — Value · Growth · Quality · Momentum</p>
+<div class="top-row">
+  <div>
+    <h1 id="txt-title">Dashboard de Oportunidades de Inversión</h1>
+    <p class="subtitle" id="txt-subtitle">Screening cuantitativo multifactorial — Value · Growth · Quality · Momentum</p>
+  </div>
+  <div class="lang-switch">
+    <button class="lang-btn" id="langBtn-es" onclick="setLanguage('es')">ES</button>
+    <button class="lang-btn" id="langBtn-en" onclick="setLanguage('en')">EN</button>
+    <button class="lang-btn" id="langBtn-fr" onclick="setLanguage('fr')">FR</button>
+  </div>
+</div>
 
 <div class="controls">
   <div class="control-group">
-    <label for="sectorFilter">Sector</label>
+    <label for="sectorFilter" id="txt-sectorLabel">Sector</label>
     <select id="sectorFilter" onchange="applyFilters()">
-      <option value="">Todos los sectores</option>
+      <option value="" id="txt-allSectors">Todos los sectores</option>
     </select>
   </div>
   <div class="control-group">
-    <label for="scoreFilter">Score mínimo: <span id="scoreValue">0</span></label>
+    <label for="scoreFilter"><span id="txt-scoreLabel">Score mínimo</span>: <span id="scoreValue">0</span></label>
     <input type="range" id="scoreFilter" min="0" max="100" value="0" step="5" oninput="applyFilters()">
   </div>
   <div class="control-group">
-    <label for="sortFilter">Ordenar por</label>
+    <label for="sortFilter" id="txt-sortLabel">Ordenar por</label>
     <select id="sortFilter" onchange="applyFilters()">
-      <option value="compositeScore">Composite Score</option>
-      <option value="drawdown">% Caída desde máximo</option>
-      <option value="roe">ROE</option>
-      <option value="revGrowth">Crecimiento de ingresos</option>
+      <option value="compositeScore" id="txt-sortComposite">Composite Score</option>
+      <option value="drawdown" id="txt-sortDrawdown">% Caída desde máximo</option>
+      <option value="roe" id="txt-sortRoe">ROE</option>
+      <option value="revGrowth" id="txt-sortRevGrowth">Crecimiento de ingresos</option>
     </select>
   </div>
 </div>
@@ -80,23 +96,78 @@
 <table id="dataTable">
   <thead>
     <tr>
-      <th>Ticker</th><th>Nombre</th><th>Sector</th><th>Precio</th>
-      <th>% desde Máx 52s</th><th>PEG</th><th>ROE</th><th>Rev Growth YoY</th>
-      <th>Debt/EBITDA</th><th>Score</th><th>Por qué es oportunidad</th>
+      <th id="th-ticker">Ticker</th><th id="th-name">Nombre</th><th id="th-sector">Sector</th><th id="th-price">Precio</th>
+      <th id="th-drawdown">% desde Máx 52s</th><th id="th-peg">PEG</th><th id="th-roe">ROE</th><th id="th-revgrowth">Rev Growth YoY</th>
+      <th id="th-debtebitda">Debt/EBITDA</th><th id="th-score">Score</th><th id="th-reason">Por qué es oportunidad</th>
     </tr>
   </thead>
   <tbody id="tableBody"></tbody>
 </table>
 
 <div class="disclaimer">
-  <strong>Nota:</strong> Este dashboard es un filtro cuantitativo de primera pasada,
-  no una recomendación de inversión personalizada. Antes de proponer una acción a un
-  cliente, evalúa su perfil de riesgo, horizonte, objetivos, concentración de cartera
-  y la normativa aplicable.
+  <span id="txt-disclaimerText">El rendimiento pasado no garantiza resultados futuros.</span>
 </div>
 
 <script>
-const ALL_DATA = [{"ticker": "ADBE", "name": "Adobe Inc.", "sector": "Technology", "price": 272.31, "drawdown": 0.26573370004853586, "peg": 0.67, "roe": 0.62953997, "revGrowth": 0.127, "debtEbitda": 0.7274128755390104, "valueScore": 91.4075, "growthScore": 90.50008575691345, "qualityScore": 91.51351645204488, "momentumScore": 90.8623200129429, "compositeScore": 100.0, "reasons": "Caída de precio con fundamentos sólidos (bono aplicado); PEG atractivo (0.67)"}, {"ticker": "META", "name": "Meta Platforms, Inc.", "sector": "Communication Services", "price": 565.21, "drawdown": 0.2852680829539706, "peg": 0.82, "roe": 0.29848, "revGrowth": 0.28, "debtEbitda": 1.0242852404296552, "valueScore": 60.776739950929795, "growthScore": 100.0, "qualityScore": 88.0500055283207, "momentumScore": 96.0714887877255, "compositeScore": 95.8, "reasons": "Caída de precio con fundamentos sólidos (bono aplicado); PEG atractivo (0.82)"}, {"ticker": "CRM", "name": "Salesforce, Inc.", "sector": "Technology", "price": 205.505, "drawdown": 0.2363531641336257, "peg": 0.87, "roe": 0.16908, "revGrowth": 0.133, "debtEbitda": 3.2995734934632743, "valueScore": 77.65, "growthScore": 94.33333333333334, "qualityScore": 65.0, "momentumScore": 83.02751043563353, "compositeScore": 89.1, "reasons": "Caída de precio con fundamentos sólidos (bono aplicado); PEG atractivo (0.87)"}, {"ticker": "VIST", "name": "Vista Energy S.A.B. de C.V.", "sector": "Energy", "price": 67.695, "drawdown": 0.16877455795677807, "peg": null, "roe": 0.29795, "revGrowth": 1.023, "debtEbitda": 1.748145477300833, "valueScore": 60.280206169871434, "growthScore": 100.0, "qualityScore": 79.60496943149028, "momentumScore": 65.00654878847416, "compositeScore": 87.0, "reasons": "Caída de precio con fundamentos sólidos (bono aplicado); ROE alto (29.8%)"}, {"ticker": "AMX", "name": "America Movil, S.A.B. de C.V.", "sector": "Communication Services", "price": 23.74, "drawdown": 0.16584680252986655, "peg": 0.89, "roe": 0.21579, "revGrowth": 0.031, "debtEbitda": 2.184902339372906, "valueScore": 96.26666666666667, "growthScore": 19.77914815825472, "qualityScore": 74.50947270731609, "momentumScore": 64.22581400796443, "compositeScore": 74.2, "reasons": "Caída de precio con fundamentos sólidos (bono aplicado); PEG atractivo (0.89)"}, {"ticker": "GOOGL", "name": "Alphabet Inc.", "sector": "Communication Services", "price": 345.855, "drawdown": 0.1535816548787352, "peg": 0.93, "roe": 0.48676, "revGrowth": 0.242, "debtEbitda": 0.6975525901373553, "valueScore": 37.20941101206639, "growthScore": 100.0, "qualityScore": 91.86188644839751, "momentumScore": 60.95510796766273, "compositeScore": 74.1, "reasons": "PEG atractivo (0.93); ROE alto (48.7%)"}, {"ticker": "NFLX", "name": "Netflix, Inc.", "sector": "Communication Services", "price": 82.0, "drawdown": 0.3528529713519059, "peg": 1.78, "roe": 0.49541, "revGrowth": 0.134, "debtEbitda": 1.1308982226039093, "valueScore": 27.882635905514537, "growthScore": 94.66666666666667, "qualityScore": 86.8061874029544, "momentumScore": 85.90587430615842, "compositeScore": 73.9, "reasons": "ROE alto (49.5%); Crecimiento sólido (13.4% YoY)"}, {"ticker": "NVDA", "name": "NVIDIA Corporation", "sector": "Technology", "price": 212.7501, "drawdown": 0.1005745328485668, "peg": 0.59, "roe": 1.14288, "revGrowth": 0.852, "debtEbitda": 0.07741943243300228, "valueScore": 43.3719938538016, "growthScore": 100.0, "qualityScore": 99.09677328828164, "momentumScore": 33.5248442828556, "compositeScore": 72.3, "reasons": "PEG atractivo (0.59); ROE alto (114.3%)"}, {"ticker": "QCOM", "name": "QUALCOMM Incorporated", "sector": "Technology", "price": 159.37, "drawdown": 0.3868497999384426, "peg": 0.71, "roe": 0.33754003, "revGrowth": -0.04, "debtEbitda": 1.2726060660161278, "valueScore": 76.80462869526608, "growthScore": 0.0, "qualityScore": 85.15292922981185, "momentumScore": 76.84005334974864, "compositeScore": 70.1, "reasons": "Caída de precio con fundamentos sólidos (bono aplicado); PEG atractivo (0.71)"}, {"ticker": "AMZN", "name": "Amazon.com, Inc.", "sector": "Consumer Cyclical", "price": 260.1137, "drawdown": 0.09431162952646238, "peg": 1.38, "roe": 0.30558002, "revGrowth": 0.196, "debtEbitda": 1.4897403092466515, "valueScore": 29.887761840459103, "growthScore": 100.0, "qualityScore": 82.61969639212239, "momentumScore": 31.43720984215413, "compositeScore": 63.5, "reasons": "PEG atractivo (1.38); ROE alto (30.6%)"}, {"ticker": "CX", "name": "Cemex, S.A.B. de C.V. Sponsored", "sector": "Basic Materials", "price": 11.025, "drawdown": 0.1934893928310168, "peg": 0.39, "roe": 0.040149998, "revGrowth": 0.122, "debtEbitda": 2.1188761305729447, "valueScore": 96.4593888596158, "growthScore": 53.38429489831182, "qualityScore": 35.27977847664898, "momentumScore": 71.59717142160449, "compositeScore": 62.4, "reasons": "PEG atractivo (0.39); Crecimiento sólido (12.2% YoY)"}, {"ticker": "TXN", "name": "Texas Instruments Incorporated", "sector": "Technology", "price": 259.86, "drawdown": 0.2220459240188006, "peg": 1.17, "roe": 0.35176, "revGrowth": 0.228, "debtEbitda": 1.476050393277311, "valueScore": 34.40209106759804, "growthScore": 50.0, "qualityScore": 82.77941207843136, "momentumScore": 79.2122464050135, "compositeScore": 61.8, "reasons": "PEG atractivo (1.17); ROE alto (35.2%)"}, {"ticker": "MSFT", "name": "Microsoft Corporation", "sector": "Technology", "price": 490.27, "drawdown": 0.11458860073683458, "peg": 1.57, "roe": 0.34039003, "revGrowth": 0.177, "debtEbitda": 0.663174342651877, "valueScore": 4.4618056615724875, "growthScore": 100.0, "qualityScore": 92.26296600239476, "momentumScore": 38.19620024561153, "compositeScore": 61.4, "reasons": "ROE alto (34.0%); Crecimiento sólido (17.7% YoY)"}, {"ticker": "COST", "name": "Costco Wholesale Corporation", "sector": "Consumer Defensive", "price": 963.61, "drawdown": 0.12119471044231644, "peg": 4.6, "roe": 0.29152, "revGrowth": 0.215, "debtEbitda": 0.7416968563497318, "valueScore": 6.1026041460192815, "growthScore": 88.3038351524354, "qualityScore": 91.34687000925312, "momentumScore": 40.39823681410548, "compositeScore": 59.1, "reasons": "ROE alto (29.2%); Crecimiento sólido (21.5% YoY)"}, {"ticker": "WMT", "name": "Walmart Inc.", "sector": "Consumer Defensive", "price": 105.75, "drawdown": 0.21759396271086118, "peg": 3.95, "roe": 0.22313999, "revGrowth": 0.059, "debtEbitda": 1.5677875610603837, "valueScore": 5.335969951444137, "growthScore": 69.66666666666666, "qualityScore": 81.70914512096219, "momentumScore": 78.02505672289632, "compositeScore": 58.9, "reasons": "ROE alto (22.3%); Deuda controlada (1.6x EBITDA)"}, {"ticker": "CSCO", "name": "Cisco Systems, Inc.", "sector": "Technology", "price": 110.94, "drawdown": 0.1490373552197592, "peg": 1.02, "roe": 0.27319, "revGrowth": 0.176, "debtEbitda": 1.5855792043015695, "valueScore": 42.72080784051815, "growthScore": 50.0, "qualityScore": 81.50157594981502, "momentumScore": 49.6791184065864, "compositeScore": 57.6, "reasons": "PEG atractivo (1.02); ROE alto (27.3%)"}, {"ticker": "JPM", "name": "JP Morgan Chase & Co.", "sector": "Financial Services", "price": 356.545, "drawdown": 0.027162346521145932, "peg": 1.72, "roe": 0.17789, "revGrowth": 0.304, "debtEbitda": null, "valueScore": 0.0, "growthScore": 99.43613626292958, "qualityScore": 100.0, "momentumScore": 9.054115507048644, "compositeScore": 56.7, "reasons": "ROE alto (17.8%); Crecimiento sólido (30.4% YoY)"}, {"ticker": "CVX", "name": "Chevron Corporation", "sector": "Energy", "price": 200.64, "drawdown": 0.0655302501047926, "peg": 0.79, "roe": 0.12231, "revGrowth": 0.535, "debtEbitda": 0.7318108715484921, "valueScore": 88.48458787698499, "growthScore": 50.0, "qualityScore": 54.54220649860093, "momentumScore": 21.843416701597533, "compositeScore": 55.4, "reasons": "PEG atractivo (0.79); Crecimiento sólido (53.5% YoY)"}, {"ticker": "INTC", "name": "Intel Corporation", "sector": "Technology", "price": 87.8565, "drawdown": 0.38281348788198105, "peg": 1.36, "roe": -0.10715, "revGrowth": 0.254, "debtEbitda": 3.001009649436873, "valueScore": 27.662741885580424, "growthScore": 100.0, "qualityScore": 25.0, "momentumScore": 77.91640323147172, "compositeScore": 55.0, "reasons": "PEG atractivo (1.36); Crecimiento sólido (25.4% YoY)"}, {"ticker": "ORCL", "name": "Oracle Corporation", "sector": "Technology", "price": 144.76, "drawdown": 0.5812796482702766, "peg": 0.83, "roe": 0.53376, "revGrowth": 0.206, "debtEbitda": 5.490653909346951, "valueScore": 42.664166666666674, "growthScore": 100.0, "qualityScore": 40.0, "momentumScore": 36.872035172972346, "compositeScore": 55.0, "reasons": "PEG atractivo (0.83); ROE alto (53.4%)"}, {"ticker": "LIN", "name": "Linde plc", "sector": "Basic Materials", "price": 487.085, "drawdown": 0.11148303538854444, "peg": 2.08, "roe": 0.18400998, "revGrowth": 0.093, "debtEbitda": 2.0266966028492863, "valueScore": 11.631397873115208, "growthScore": 81.0, "qualityScore": 76.35520630009165, "momentumScore": 37.161011796181484, "compositeScore": 53.5, "reasons": "ROE alto (18.4%); Deuda controlada (2.0x EBITDA)"}, {"ticker": "MA", "name": "Mastercard Incorporated", "sector": "Financial Services", "price": 599.11, "drawdown": 0.004172068747714489, "peg": 1.78, "roe": 2.41202, "revGrowth": 0.141, "debtEbitda": 1.109995062881838, "valueScore": 12.119188971969217, "growthScore": 95.86042238991162, "qualityScore": 87.05005759971189, "momentumScore": 1.3906895825714967, "compositeScore": 53.4, "reasons": "ROE alto (241.2%); Crecimiento sólido (14.1% YoY)"}, {"ticker": "AAPL", "name": "Apple Inc.", "sector": "Technology", "price": 309.52, "drawdown": 0.10172098557622547, "peg": 2.49, "roe": 1.4875101, "revGrowth": 0.164, "debtEbitda": 0.5021701417678983, "valueScore": 8.942661125077285, "growthScore": 63.07086401108467, "qualityScore": 94.14134834604118, "momentumScore": 33.90699519207516, "compositeScore": 53.0, "reasons": "ROE alto (148.8%); Crecimiento sólido (16.4% YoY)"}, {"ticker": "XOM", "name": "ExxonMobil Holdings Corporation", "sector": "Energy", "price": 161.44, "drawdown": 0.08485913496967291, "peg": 1.29, "roe": 0.12584, "revGrowth": 0.441, "debtEbitda": 0.6236365909888123, "valueScore": 61.03898485830048, "growthScore": 50.0, "qualityScore": 60.51090643846388, "momentumScore": 28.286378323224305, "compositeScore": 51.6, "reasons": "PEG atractivo (1.29); Crecimiento sólido (44.1% YoY)"}, {"ticker": "FMX", "name": "Fomento Economico Mexicano S.A.", "sector": "Consumer Defensive", "price": 123.985, "drawdown": 0.12359510850356965, "peg": 4.77, "roe": 0.14746, "revGrowth": 0.093, "debtEbitda": 2.4526344721029854, "valueScore": 60.0, "growthScore": 31.0, "qualityScore": 67.99926449213186, "momentumScore": 41.19836950118989, "compositeScore": 51.4, "reasons": "Deuda controlada (2.5x EBITDA)"}, {"ticker": "V", "name": "Visa Inc.", "sector": "Financial Services", "price": 383.08, "drawdown": 0.0009128132905615699, "peg": 1.68, "roe": 0.6119, "revGrowth": 0.144, "debtEbitda": 0.7672862985346992, "valueScore": 10.697980936146173, "growthScore": 82.25336695378618, "qualityScore": 91.04832651709518, "momentumScore": 0.3042710968538566, "compositeScore": 50.6, "reasons": "ROE alto (61.2%); Crecimiento sólido (14.4% YoY)"}, {"ticker": "KOF", "name": "Coca Cola Femsa S.A.B. de C.V.", "sector": "Consumer Defensive", "price": 116.775, "drawdown": 8.56274350301058e-05, "peg": 19.41, "roe": 0.17065, "revGrowth": 0.047, "debtEbitda": 1.788853856936182, "valueScore": 60.0, "growthScore": 41.66969473825972, "qualityScore": 79.13003833574454, "momentumScore": 0.028542478343368597, "compositeScore": 49.2, "reasons": "ROE alto (17.1%); Deuda controlada (1.8x EBITDA)"}, {"ticker": "HD", "name": "Home Depot, Inc. (The)", "sector": "Consumer Cyclical", "price": 336.92, "drawdown": 0.21049794961921495, "peg": 1.87, "roe": 1.0429599, "revGrowth": 0.057, "debtEbitda": 2.4697824001027033, "valueScore": 23.42408827458071, "growthScore": 19.0, "qualityScore": 71.18587199880179, "momentumScore": 76.132786565124, "compositeScore": 47.2, "reasons": "ROE alto (104.3%); Deuda controlada (2.5x EBITDA)"}, {"ticker": "PEP", "name": "Pepsico, Inc.", "sector": "Consumer Defensive", "price": 142.675, "drawdown": 0.1679787730347561, "peg": 1.55, "roe": 0.51508, "revGrowth": 0.064, "debtEbitda": 2.8182394120780367, "valueScore": 33.276985708390875, "growthScore": 21.333333333333336, "qualityScore": 67.12054019242291, "momentumScore": 64.79433947593498, "compositeScore": 46.7, "reasons": "ROE alto (51.5%); Deuda controlada (2.8x EBITDA)"}, {"ticker": "MCD", "name": "McDonald's Corporation", "sector": "Consumer Cyclical", "price": 269.14, "drawdown": 0.21246525237746894, "peg": 2.53, "roe": null, "revGrowth": 0.037, "debtEbitda": 3.657334343478821, "valueScore": 21.03044430726926, "growthScore": 50.67343906418619, "qualityScore": 41.66666666666667, "momentumScore": 76.65740063399173, "compositeScore": 45.8, "reasons": "Ver métricas"}];
+const TRANSLATIONS = {
+  es: {
+    title: "Dashboard de Oportunidades de Inversión",
+    subtitle: "Screening cuantitativo multifactorial — Value · Growth · Quality · Momentum",
+    sectorLabel: "Sector", allSectors: "Todos los sectores", scoreLabel: "Score mínimo",
+    sortLabel: "Ordenar por", sortComposite: "Composite Score", sortDrawdown: "% Caída desde máximo",
+    sortRoe: "ROE", sortRevGrowth: "Crecimiento de ingresos",
+    tabScore: "Composite Score", tabPillars: "Desglose por Pilar", tabScatter: "Mapa de Oportunidades",
+    chartScoreTitle: "Composite Score por Ticker", chartScoreXAxis: "Composite Score (0-100)",
+    chartPillarsTitle: "Desglose del Score por Pilar", chartPillarsXAxis: "Contribución al Composite Score",
+    chartScatterTitle: "Mapa de Oportunidades: Caída desde Máximo vs. Score",
+    chartScatterXAxis: "% de caída desde máximo de 52 semanas", chartScatterYAxis: "Composite Score",
+    zoneLabel: "Zona objetivo de caída",
+    thTicker: "Ticker", thName: "Nombre", thSector: "Sector", thPrice: "Precio",
+    thDrawdown: "% desde Máx 52s", thPeg: "PEG", thRoe: "ROE", thRevGrowth: "Rev Growth YoY",
+    thDebtEbitda: "Debt/EBITDA", thScore: "Score", thReason: "Por qué es oportunidad",
+    countBadge: (n, total) => `Mostrando ${n} de ${total} oportunidades`,
+    disclaimerText: "El rendimiento pasado no garantiza resultados futuros.",
+  },
+  en: {
+    title: "Investment Opportunities Dashboard",
+    subtitle: "Multi-factor quantitative screening — Value · Growth · Quality · Momentum",
+    sectorLabel: "Sector", allSectors: "All sectors", scoreLabel: "Minimum score",
+    sortLabel: "Sort by", sortComposite: "Composite Score", sortDrawdown: "% Drop from high",
+    sortRoe: "ROE", sortRevGrowth: "Revenue growth",
+    tabScore: "Composite Score", tabPillars: "Pillar Breakdown", tabScatter: "Opportunity Map",
+    chartScoreTitle: "Composite Score by Ticker", chartScoreXAxis: "Composite Score (0-100)",
+    chartPillarsTitle: "Score Breakdown by Pillar", chartPillarsXAxis: "Contribution to Composite Score",
+    chartScatterTitle: "Opportunity Map: Drop from High vs. Score",
+    chartScatterXAxis: "% drop from 52-week high", chartScatterYAxis: "Composite Score",
+    zoneLabel: "Target drawdown zone",
+    thTicker: "Ticker", thName: "Name", thSector: "Sector", thPrice: "Price",
+    thDrawdown: "% from 52W High", thPeg: "PEG", thRoe: "ROE", thRevGrowth: "Rev Growth YoY",
+    thDebtEbitda: "Debt/EBITDA", thScore: "Score", thReason: "Why it's an opportunity",
+    countBadge: (n, total) => `Showing ${n} of ${total} opportunities`,
+    disclaimerText: "Past performance does not guarantee future results.",
+  },
+  fr: {
+    title: "Tableau de Bord des Opportunités d'Investissement",
+    subtitle: "Filtrage quantitatif multifactoriel — Value · Growth · Quality · Momentum",
+    sectorLabel: "Secteur", allSectors: "Tous les secteurs", scoreLabel: "Score minimum",
+    sortLabel: "Trier par", sortComposite: "Score composite", sortDrawdown: "% de baisse depuis le sommet",
+    sortRoe: "ROE", sortRevGrowth: "Croissance du chiffre d'affaires",
+    tabScore: "Score composite", tabPillars: "Répartition par pilier", tabScatter: "Carte des opportunités",
+    chartScoreTitle: "Score composite par action", chartScoreXAxis: "Score composite (0-100)",
+    chartPillarsTitle: "Répartition du score par pilier", chartPillarsXAxis: "Contribution au score composite",
+    chartScatterTitle: "Carte des opportunités : baisse depuis le sommet vs. score",
+    chartScatterXAxis: "% de baisse depuis le sommet sur 52 semaines", chartScatterYAxis: "Score composite",
+    zoneLabel: "Zone cible de baisse",
+    thTicker: "Symbole", thName: "Nom", thSector: "Secteur", thPrice: "Prix",
+    thDrawdown: "% depuis sommet 52s", thPeg: "PEG", thRoe: "ROE", thRevGrowth: "Croissance CA",
+    thDebtEbitda: "Dette/EBITDA", thScore: "Score", thReason: "Pourquoi c'est une opportunité",
+    countBadge: (n, total) => `Affichage de ${n} sur ${total} opportunités`,
+    disclaimerText: "Les performances passées ne garantissent pas les résultats futurs.",
+  },
+};
+let currentLang = 'es';
+
+const ALL_DATA = [{"ticker": "ADBE", "name": "Adobe Inc.", "sector": "Technology", "price": 273.84, "drawdown": 0.2616081540203851, "peg": 0.67, "roe": 0.62953997, "revGrowth": 0.127, "debtEbitda": 0.7274128755390104, "valueScore": 91.4075, "growthScore": 90.50008575691345, "qualityScore": 91.51351645204488, "momentumScore": 89.76217440543604, "compositeScore": 100.0, "reasons": "Caída de precio con fundamentos sólidos (bono aplicado); PEG atractivo (0.67)"}, {"ticker": "META", "name": "Meta Platforms, Inc.", "sector": "Communication Services", "price": 569.1696, "drawdown": 0.2802610015174507, "peg": 0.82, "roe": 0.29848, "revGrowth": 0.28, "debtEbitda": 1.0242852404296552, "valueScore": 60.73768834694439, "growthScore": 100.0, "qualityScore": 88.0500055283207, "momentumScore": 94.73626707132019, "compositeScore": 95.5, "reasons": "Caída de precio con fundamentos sólidos (bono aplicado); PEG atractivo (0.82)"}, {"ticker": "CRM", "name": "Salesforce, Inc.", "sector": "Technology", "price": 205.56, "drawdown": 0.2361487867414812, "peg": 0.87, "roe": 0.16908, "revGrowth": 0.133, "debtEbitda": 3.2995734934632743, "valueScore": 77.65, "growthScore": 94.33333333333334, "qualityScore": 65.0, "momentumScore": 82.97300979772832, "compositeScore": 89.1, "reasons": "Caída de precio con fundamentos sólidos (bono aplicado); PEG atractivo (0.87)"}, {"ticker": "VIST", "name": "Vista Energy S.A.B. de C.V.", "sector": "Energy", "price": 68.2471, "drawdown": 0.16199533398821211, "peg": null, "roe": 0.29795, "revGrowth": 1.023, "debtEbitda": 1.748145477300833, "valueScore": 60.19704147480757, "growthScore": 100.0, "qualityScore": 79.60496943149028, "momentumScore": 63.19875573018991, "compositeScore": 86.6, "reasons": "Caída de precio con fundamentos sólidos (bono aplicado); ROE alto (29.8%)"}, {"ticker": "AMX", "name": "America Movil, S.A.B. de C.V.", "sector": "Communication Services", "price": 23.75, "drawdown": 0.16549543218552357, "peg": 0.89, "roe": 0.21579, "revGrowth": 0.031, "debtEbitda": 2.184902339372906, "valueScore": 96.26666666666667, "growthScore": 19.77914815825472, "qualityScore": 74.50947270731609, "momentumScore": 64.13211524947296, "compositeScore": 74.2, "reasons": "Caída de precio con fundamentos sólidos (bono aplicado); PEG atractivo (0.89)"}, {"ticker": "NFLX", "name": "Netflix, Inc.", "sector": "Communication Services", "price": 82.43, "drawdown": 0.34945939546997073, "peg": 1.78, "roe": 0.49541, "revGrowth": 0.134, "debtEbitda": 1.1308982226039093, "valueScore": 27.737186249839606, "growthScore": 94.66666666666667, "qualityScore": 86.8061874029544, "momentumScore": 86.81082787467447, "compositeScore": 74.0, "reasons": "ROE alto (49.5%); Crecimiento sólido (13.4% YoY)"}, {"ticker": "GOOGL", "name": "Alphabet Inc.", "sector": "Communication Services", "price": 347.125, "drawdown": 0.15047355669220042, "peg": 0.93, "roe": 0.48676, "revGrowth": 0.242, "debtEbitda": 0.6975525901373553, "valueScore": 37.202059449047844, "growthScore": 100.0, "qualityScore": 91.86188644839751, "momentumScore": 60.12628178458679, "compositeScore": 73.9, "reasons": "PEG atractivo (0.93); ROE alto (48.7%)"}, {"ticker": "NVDA", "name": "NVIDIA Corporation", "sector": "Technology", "price": 212.45, "drawdown": 0.1018432400439672, "peg": 0.59, "roe": 1.14288, "revGrowth": 0.852, "debtEbitda": 0.07741943243300228, "valueScore": 43.376439155879744, "growthScore": 100.0, "qualityScore": 99.09677328828164, "momentumScore": 33.94774668132241, "compositeScore": 72.4, "reasons": "PEG atractivo (0.59); ROE alto (114.3%)"}, {"ticker": "QCOM", "name": "QUALCOMM Incorporated", "sector": "Technology", "price": 159.69, "drawdown": 0.3856186518928902, "peg": 0.71, "roe": 0.33754003, "revGrowth": -0.04, "debtEbitda": 1.2726060660161278, "valueScore": 76.75865120826148, "growthScore": 0.0, "qualityScore": 85.15292922981185, "momentumScore": 77.16835949522928, "compositeScore": 70.2, "reasons": "Caída de precio con fundamentos sólidos (bono aplicado); PEG atractivo (0.71)"}, {"ticker": "AMZN", "name": "Amazon.com, Inc.", "sector": "Consumer Cyclical", "price": 260.785, "drawdown": 0.09197423398328679, "peg": 1.38, "roe": 0.30558002, "revGrowth": 0.196, "debtEbitda": 1.4897403092466515, "valueScore": 29.886654307857057, "growthScore": 100.0, "qualityScore": 82.61969639212239, "momentumScore": 30.65807799442893, "compositeScore": 63.4, "reasons": "PEG atractivo (1.38); ROE alto (30.6%)"}, {"ticker": "CX", "name": "Cemex, S.A.B. de C.V. Sponsored", "sector": "Basic Materials", "price": 11.005, "drawdown": 0.1949524506217995, "peg": 0.39, "roe": 0.040149998, "revGrowth": 0.122, "debtEbitda": 2.1188761305729447, "valueScore": 96.50747384557883, "growthScore": 53.38429489831182, "qualityScore": 35.27977847664898, "momentumScore": 71.9873201658132, "compositeScore": 62.5, "reasons": "PEG atractivo (0.39); Crecimiento sólido (12.2% YoY)"}, {"ticker": "TXN", "name": "Texas Instruments Incorporated", "sector": "Technology", "price": 259.64, "drawdown": 0.2227045474957339, "peg": 1.17, "roe": 0.35176, "revGrowth": 0.228, "debtEbitda": 1.476050393277311, "valueScore": 34.408133749843806, "growthScore": 50.0, "qualityScore": 82.77941207843136, "momentumScore": 79.38787933219572, "compositeScore": 61.8, "reasons": "PEG atractivo (1.17); ROE alto (35.2%)"}, {"ticker": "MSFT", "name": "Microsoft Corporation", "sector": "Technology", "price": 490.54, "drawdown": 0.11410098966986926, "peg": 1.57, "roe": 0.34039003, "revGrowth": 0.177, "debtEbitda": 0.663174342651877, "valueScore": 4.460867474915602, "growthScore": 100.0, "qualityScore": 92.26296600239476, "momentumScore": 38.03366322328976, "compositeScore": 61.4, "reasons": "ROE alto (34.0%); Crecimiento sólido (17.7% YoY)"}, {"ticker": "CSCO", "name": "Cisco Systems, Inc.", "sector": "Technology", "price": 110.715, "drawdown": 0.15076321239548976, "peg": 1.02, "roe": 0.27319, "revGrowth": 0.176, "debtEbitda": 1.5855792043015695, "valueScore": 42.74097033373017, "growthScore": 50.0, "qualityScore": 81.50157594981502, "momentumScore": 60.203523305463946, "compositeScore": 59.7, "reasons": "PEG atractivo (1.02); ROE alto (27.3%)"}, {"ticker": "COST", "name": "Costco Wholesale Corporation", "sector": "Consumer Defensive", "price": 961.175, "drawdown": 0.12341541267669863, "peg": 4.6, "roe": 0.29152, "revGrowth": 0.215, "debtEbitda": 0.7416968563497318, "valueScore": 6.118064203249181, "growthScore": 88.3038351524354, "qualityScore": 91.34687000925312, "momentumScore": 41.138470892232874, "compositeScore": 59.2, "reasons": "ROE alto (29.2%); Crecimiento sólido (21.5% YoY)"}, {"ticker": "WMT", "name": "Walmart Inc.", "sector": "Consumer Defensive", "price": 105.44, "drawdown": 0.21988754069251257, "peg": 3.95, "roe": 0.22313999, "revGrowth": 0.059, "debtEbitda": 1.5677875610603837, "valueScore": 5.347740239051404, "growthScore": 69.66666666666666, "qualityScore": 81.70914512096219, "momentumScore": 78.63667751800335, "compositeScore": 59.0, "reasons": "ROE alto (22.3%); Deuda controlada (1.6x EBITDA)"}, {"ticker": "JPM", "name": "JP Morgan Chase & Co.", "sector": "Financial Services", "price": 356.73, "drawdown": 0.026657571623465163, "peg": 1.72, "roe": 0.17789, "revGrowth": 0.304, "debtEbitda": null, "valueScore": 0.0, "growthScore": 99.43613626292958, "qualityScore": 100.0, "momentumScore": 8.88585720782172, "compositeScore": 56.6, "reasons": "ROE alto (17.8%); Crecimiento sólido (30.4% YoY)"}, {"ticker": "CVX", "name": "Chevron Corporation", "sector": "Energy", "price": 200.61, "drawdown": 0.0656699734525639, "peg": 0.79, "roe": 0.12231, "revGrowth": 0.535, "debtEbitda": 0.7318108715484921, "valueScore": 88.48771332955789, "growthScore": 50.0, "qualityScore": 54.54220649860093, "momentumScore": 21.88999115085463, "compositeScore": 55.4, "reasons": "PEG atractivo (0.79); Crecimiento sólido (53.5% YoY)"}, {"ticker": "ORCL", "name": "Oracle Corporation", "sector": "Technology", "price": 143.9, "drawdown": 0.5837672104593312, "peg": 0.83, "roe": 0.53376, "revGrowth": 0.206, "debtEbitda": 5.490653909346951, "valueScore": 42.664166666666674, "growthScore": 100.0, "qualityScore": 40.0, "momentumScore": 36.623278954066876, "compositeScore": 55.0, "reasons": "PEG atractivo (0.83); ROE alto (53.4%)"}, {"ticker": "INTC", "name": "Intel Corporation", "sector": "Technology", "price": 87.38, "drawdown": 0.38616087109237796, "peg": 1.36, "roe": -0.10715, "revGrowth": 0.254, "debtEbitda": 3.001009649436873, "valueScore": 27.684169551854243, "growthScore": 100.0, "qualityScore": 25.0, "momentumScore": 77.02376770869921, "compositeScore": 54.8, "reasons": "PEG atractivo (1.36); Crecimiento sólido (25.4% YoY)"}, {"ticker": "MA", "name": "Mastercard Incorporated", "sector": "Financial Services", "price": 597.93, "drawdown": 0.0061334397127755964, "peg": 1.78, "roe": 2.41202, "revGrowth": 0.141, "debtEbitda": 1.109995062881838, "valueScore": 12.143105308425172, "growthScore": 95.86042238991162, "qualityScore": 87.05005759971189, "momentumScore": 2.0444799042585324, "compositeScore": 53.5, "reasons": "ROE alto (241.2%); Crecimiento sólido (14.1% YoY)"}, {"ticker": "LIN", "name": "Linde plc", "sector": "Basic Materials", "price": 487.3201, "drawdown": 0.11105417730755202, "peg": 2.08, "roe": 0.18400998, "revGrowth": 0.093, "debtEbitda": 2.0266966028492863, "valueScore": 11.628045370143875, "growthScore": 81.0, "qualityScore": 76.35520630009165, "momentumScore": 37.01805910251734, "compositeScore": 53.5, "reasons": "ROE alto (18.4%); Deuda controlada (2.0x EBITDA)"}, {"ticker": "AAPL", "name": "Apple Inc.", "sector": "Technology", "price": 308.95, "drawdown": 0.10337522129030387, "peg": 2.49, "roe": 1.4875101, "revGrowth": 0.164, "debtEbitda": 0.5021701417678983, "valueScore": 8.95915931227428, "growthScore": 63.07086401108467, "qualityScore": 94.14134834604118, "momentumScore": 34.45840709676796, "compositeScore": 53.1, "reasons": "ROE alto (148.8%); Crecimiento sólido (16.4% YoY)"}, {"ticker": "XOM", "name": "ExxonMobil Holdings Corporation", "sector": "Energy", "price": 161.285, "drawdown": 0.0857377699676889, "peg": 1.29, "roe": 0.12584, "revGrowth": 0.441, "debtEbitda": 0.6236365909888123, "valueScore": 61.048397780289335, "growthScore": 50.0, "qualityScore": 60.51090643846388, "momentumScore": 28.5792566558963, "compositeScore": 51.6, "reasons": "PEG atractivo (1.29); Crecimiento sólido (44.1% YoY)"}, {"ticker": "FMX", "name": "Fomento Economico Mexicano S.A.", "sector": "Consumer Defensive", "price": 123.73, "drawdown": 0.12539761080087647, "peg": 4.77, "roe": 0.14746, "revGrowth": 0.093, "debtEbitda": 2.4526344721029854, "valueScore": 60.0, "growthScore": 31.0, "qualityScore": 67.99926449213186, "momentumScore": 41.79920360029216, "compositeScore": 51.5, "reasons": "Deuda controlada (2.5x EBITDA)"}, {"ticker": "V", "name": "Visa Inc.", "sector": "Financial Services", "price": 382.98, "drawdown": 0.0013559322033897831, "peg": 1.68, "roe": 0.6119, "revGrowth": 0.144, "debtEbitda": 0.7672862985346992, "valueScore": 10.700773417645586, "growthScore": 82.25336695378618, "qualityScore": 91.04832651709518, "momentumScore": 0.45197740112992774, "compositeScore": 50.6, "reasons": "ROE alto (61.2%); Crecimiento sólido (14.4% YoY)"}, {"ticker": "KOF", "name": "Coca Cola Femsa S.A.B. de C.V.", "sector": "Consumer Defensive", "price": 116.09, "drawdown": 0.007565719170762906, "peg": 19.41, "roe": 0.17065, "revGrowth": 0.047, "debtEbitda": 1.788853856936182, "valueScore": 60.0, "growthScore": 41.66969473825972, "qualityScore": 79.13003833574454, "momentumScore": 2.5219063902543017, "compositeScore": 49.7, "reasons": "ROE alto (17.1%); Deuda controlada (1.8x EBITDA)"}, {"ticker": "HD", "name": "Home Depot, Inc. (The)", "sector": "Consumer Cyclical", "price": 337.53, "drawdown": 0.2090685413005273, "peg": 1.87, "roe": 1.0429599, "revGrowth": 0.057, "debtEbitda": 2.4697824001027033, "valueScore": 23.401514165679572, "growthScore": 19.0, "qualityScore": 71.18587199880179, "momentumScore": 75.75161101347395, "compositeScore": 47.1, "reasons": "ROE alto (104.3%); Deuda controlada (2.5x EBITDA)"}, {"ticker": "PEP", "name": "Pepsico, Inc.", "sector": "Consumer Defensive", "price": 142.19, "drawdown": 0.1708070912059715, "peg": 1.55, "roe": 0.51508, "revGrowth": 0.064, "debtEbitda": 2.8182394120780367, "valueScore": 33.32838614195687, "growthScore": 21.333333333333336, "qualityScore": 67.12054019242291, "momentumScore": 65.54855765492574, "compositeScore": 46.9, "reasons": "ROE alto (51.5%); Deuda controlada (2.8x EBITDA)"}, {"ticker": "MCD", "name": "McDonald's Corporation", "sector": "Consumer Cyclical", "price": 268.38, "drawdown": 0.2146891002194587, "peg": 2.53, "roe": null, "revGrowth": 0.037, "debtEbitda": 3.657334343478821, "valueScore": 21.06536261234856, "growthScore": 50.67343906418619, "qualityScore": 41.66666666666667, "momentumScore": 77.25042672518899, "compositeScore": 45.9, "reasons": "Ver métricas"}];
 const SECTORS = ["Basic Materials", "Communication Services", "Consumer Cyclical", "Consumer Defensive", "Energy", "Financial Services", "Technology"];
 const WEIGHTS = {"value": 25, "growth": 25, "quality": 30, "momentum": 20};
 const DRAWDOWN_MIN = 15.0;
@@ -126,6 +197,7 @@ function getFilteredData() {
 }
 
 function renderScoreChart(data) {
+  const t = TRANSLATIONS[currentLang];
   const rev = [...data].reverse();
   Plotly.newPlot('chart-score', [{
     x: rev.map(d => d.compositeScore), y: rev.map(d => d.ticker),
@@ -133,13 +205,14 @@ function renderScoreChart(data) {
     marker: { color: rev.map(d => d.compositeScore), colorscale: 'Tealgrn' },
     text: rev.map(d => d.compositeScore), textposition: 'outside',
   }], {
-    title: 'Composite Score por Ticker', xaxis: { title: 'Composite Score (0-100)' },
+    title: t.chartScoreTitle, xaxis: { title: t.chartScoreXAxis },
     height: Math.max(400, 30 * rev.length), template: 'plotly_white',
     margin: { l: 80 },
   }, { responsive: true });
 }
 
 function renderPillarsChart(data) {
+  const t = TRANSLATIONS[currentLang];
   const rev = [...data].reverse();
   const pillars = [
     { key: 'valueScore', name: 'Value', color: '#2E86AB', w: WEIGHTS.value },
@@ -152,31 +225,37 @@ function renderPillarsChart(data) {
     name: p.name, type: 'bar', orientation: 'h', marker: { color: p.color },
   }));
   Plotly.newPlot('chart-pillars', traces, {
-    barmode: 'stack', title: 'Desglose del Score por Pilar',
-    xaxis: { title: 'Contribución al Composite Score' },
+    barmode: 'stack', title: t.chartPillarsTitle,
+    xaxis: { title: t.chartPillarsXAxis },
     height: Math.max(400, 30 * rev.length), template: 'plotly_white',
     legend: { orientation: 'h', y: -0.15 }, margin: { l: 80 },
   }, { responsive: true });
 }
 
 function renderScatterChart(data) {
+  const t = TRANSLATIONS[currentLang];
   Plotly.newPlot('chart-scatter', [{
     x: data.map(d => d.drawdown * 100), y: data.map(d => d.compositeScore),
     text: data.map(d => d.ticker), mode: 'markers+text', textposition: 'top center',
     marker: { size: 14, color: data.map(d => d.compositeScore), colorscale: 'Tealgrn', showscale: true },
     type: 'scatter',
   }], {
-    title: 'Mapa de Oportunidades: Caída desde Máximo vs. Score',
-    xaxis: { title: '% de caída desde máximo de 52 semanas' },
-    yaxis: { title: 'Composite Score' }, template: 'plotly_white', height: 500,
+    title: t.chartScatterTitle,
+    xaxis: { title: t.chartScatterXAxis },
+    yaxis: { title: t.chartScatterYAxis }, template: 'plotly_white', height: 500,
     shapes: [{
       type: 'rect', x0: DRAWDOWN_MIN, x1: DRAWDOWN_MAX, y0: 0, y1: 100,
       fillcolor: 'green', opacity: 0.08, line: { width: 0 },
+    }],
+    annotations: [{
+      x: (DRAWDOWN_MIN + DRAWDOWN_MAX) / 2, y: 98, text: t.zoneLabel,
+      showarrow: false, font: { size: 11, color: 'green' },
     }],
   }, { responsive: true });
 }
 
 function renderTable(data) {
+  const t = TRANSLATIONS[currentLang];
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = data.map(d => `
     <tr>
@@ -185,8 +264,7 @@ function renderTable(data) {
       <td>${fmtNum(d.peg)}</td><td>${fmtPct(d.roe)}</td><td>${fmtPct(d.revGrowth)}</td>
       <td>${fmtNum(d.debtEbitda)}</td><td>${d.compositeScore}</td><td>${d.reasons}</td>
     </tr>`).join('');
-  document.getElementById('countBadge').textContent =
-    `Mostrando ${data.length} de ${ALL_DATA.length} oportunidades`;
+  document.getElementById('countBadge').textContent = t.countBadge(data.length, ALL_DATA.length);
 }
 
 function applyFilters() {
@@ -205,7 +283,48 @@ function showTab(name) {
   });
 }
 
-applyFilters();
+function setLanguage(lang) {
+  currentLang = lang;
+  const t = TRANSLATIONS[lang];
+  document.documentElement.lang = lang;
+
+  document.getElementById('txt-title').textContent = t.title;
+  document.getElementById('txt-subtitle').textContent = t.subtitle;
+  document.getElementById('txt-sectorLabel').textContent = t.sectorLabel;
+  document.getElementById('txt-allSectors').textContent = t.allSectors;
+  document.getElementById('txt-scoreLabel').textContent = t.scoreLabel;
+  document.getElementById('txt-sortLabel').textContent = t.sortLabel;
+  document.getElementById('txt-sortComposite').textContent = t.sortComposite;
+  document.getElementById('txt-sortDrawdown').textContent = t.sortDrawdown;
+  document.getElementById('txt-sortRoe').textContent = t.sortRoe;
+  document.getElementById('txt-sortRevGrowth').textContent = t.sortRevGrowth;
+
+  document.getElementById('tabBtn-score').textContent = t.tabScore;
+  document.getElementById('tabBtn-pillars').textContent = t.tabPillars;
+  document.getElementById('tabBtn-scatter').textContent = t.tabScatter;
+
+  document.getElementById('th-ticker').textContent = t.thTicker;
+  document.getElementById('th-name').textContent = t.thName;
+  document.getElementById('th-sector').textContent = t.thSector;
+  document.getElementById('th-price').textContent = t.thPrice;
+  document.getElementById('th-drawdown').textContent = t.thDrawdown;
+  document.getElementById('th-peg').textContent = t.thPeg;
+  document.getElementById('th-roe').textContent = t.thRoe;
+  document.getElementById('th-revgrowth').textContent = t.thRevGrowth;
+  document.getElementById('th-debtebitda').textContent = t.thDebtEbitda;
+  document.getElementById('th-score').textContent = t.thScore;
+  document.getElementById('th-reason').textContent = t.thReason;
+
+  document.getElementById('txt-disclaimerText').textContent = t.disclaimerText;
+
+  ['es', 'en', 'fr'].forEach(l => {
+    document.getElementById('langBtn-' + l).classList.toggle('active', l === lang);
+  });
+
+  applyFilters();  // vuelve a dibujar las gráficas con los títulos traducidos
+}
+
+setLanguage('es');
 </script>
 </body>
 </html>

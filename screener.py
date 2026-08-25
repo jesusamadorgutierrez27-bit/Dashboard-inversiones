@@ -375,8 +375,15 @@ def export_dashboard_html(df: pd.DataFrame, filename: str = HTML_OUTPUT_FILE, to
   }}
   body {{ font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 24px 32px;
          background: var(--bg); color: #222; }}
+  .top-row {{ display: flex; justify-content: space-between; align-items: flex-start;
+              flex-wrap: wrap; gap: 12px; }}
   h1 {{ color: var(--primary); margin-bottom: 4px; }}
   .subtitle {{ color: #666; margin-top: 0; margin-bottom: 20px; }}
+  .lang-switch {{ display: flex; gap: 6px; }}
+  .lang-btn {{ padding: 6px 12px; border: 1px solid var(--primary); background: white;
+               color: var(--primary); border-radius: 6px; cursor: pointer; font-size: 12px;
+               font-weight: bold; }}
+  .lang-btn.active {{ background: var(--primary); color: white; }}
   .controls {{ display: flex; flex-wrap: wrap; gap: 24px; align-items: center;
                background: white; padding: 16px 20px; border-radius: 8px;
                border: 1px solid var(--border); margin-bottom: 20px; }}
@@ -404,27 +411,36 @@ def export_dashboard_html(df: pd.DataFrame, filename: str = HTML_OUTPUT_FILE, to
 </head>
 <body>
 
-<h1>Dashboard de Oportunidades de Inversión</h1>
-<p class="subtitle">Screening cuantitativo multifactorial — Value · Growth · Quality · Momentum</p>
+<div class="top-row">
+  <div>
+    <h1 id="txt-title">Dashboard de Oportunidades de Inversión</h1>
+    <p class="subtitle" id="txt-subtitle">Screening cuantitativo multifactorial — Value · Growth · Quality · Momentum</p>
+  </div>
+  <div class="lang-switch">
+    <button class="lang-btn" id="langBtn-es" onclick="setLanguage('es')">ES</button>
+    <button class="lang-btn" id="langBtn-en" onclick="setLanguage('en')">EN</button>
+    <button class="lang-btn" id="langBtn-fr" onclick="setLanguage('fr')">FR</button>
+  </div>
+</div>
 
 <div class="controls">
   <div class="control-group">
-    <label for="sectorFilter">Sector</label>
+    <label for="sectorFilter" id="txt-sectorLabel">Sector</label>
     <select id="sectorFilter" onchange="applyFilters()">
-      <option value="">Todos los sectores</option>
+      <option value="" id="txt-allSectors">Todos los sectores</option>
     </select>
   </div>
   <div class="control-group">
-    <label for="scoreFilter">Score mínimo: <span id="scoreValue">0</span></label>
+    <label for="scoreFilter"><span id="txt-scoreLabel">Score mínimo</span>: <span id="scoreValue">0</span></label>
     <input type="range" id="scoreFilter" min="0" max="100" value="0" step="5" oninput="applyFilters()">
   </div>
   <div class="control-group">
-    <label for="sortFilter">Ordenar por</label>
+    <label for="sortFilter" id="txt-sortLabel">Ordenar por</label>
     <select id="sortFilter" onchange="applyFilters()">
-      <option value="compositeScore">Composite Score</option>
-      <option value="drawdown">% Caída desde máximo</option>
-      <option value="roe">ROE</option>
-      <option value="revGrowth">Crecimiento de ingresos</option>
+      <option value="compositeScore" id="txt-sortComposite">Composite Score</option>
+      <option value="drawdown" id="txt-sortDrawdown">% Caída desde máximo</option>
+      <option value="roe" id="txt-sortRoe">ROE</option>
+      <option value="revGrowth" id="txt-sortRevGrowth">Crecimiento de ingresos</option>
     </select>
   </div>
 </div>
@@ -445,22 +461,77 @@ def export_dashboard_html(df: pd.DataFrame, filename: str = HTML_OUTPUT_FILE, to
 <table id="dataTable">
   <thead>
     <tr>
-      <th>Ticker</th><th>Nombre</th><th>Sector</th><th>Precio</th>
-      <th>% desde Máx 52s</th><th>PEG</th><th>ROE</th><th>Rev Growth YoY</th>
-      <th>Debt/EBITDA</th><th>Score</th><th>Por qué es oportunidad</th>
+      <th id="th-ticker">Ticker</th><th id="th-name">Nombre</th><th id="th-sector">Sector</th><th id="th-price">Precio</th>
+      <th id="th-drawdown">% desde Máx 52s</th><th id="th-peg">PEG</th><th id="th-roe">ROE</th><th id="th-revgrowth">Rev Growth YoY</th>
+      <th id="th-debtebitda">Debt/EBITDA</th><th id="th-score">Score</th><th id="th-reason">Por qué es oportunidad</th>
     </tr>
   </thead>
   <tbody id="tableBody"></tbody>
 </table>
 
 <div class="disclaimer">
-  <strong>Nota:</strong> Este dashboard es un filtro cuantitativo de primera pasada,
-  no una recomendación de inversión personalizada. Antes de proponer una acción a un
-  cliente, evalúa su perfil de riesgo, horizonte, objetivos, concentración de cartera
-  y la normativa aplicable.
+  <span id="txt-disclaimerText">El rendimiento pasado no garantiza resultados futuros.</span>
 </div>
 
 <script>
+const TRANSLATIONS = {{
+  es: {{
+    title: "Dashboard de Oportunidades de Inversión",
+    subtitle: "Screening cuantitativo multifactorial — Value · Growth · Quality · Momentum",
+    sectorLabel: "Sector", allSectors: "Todos los sectores", scoreLabel: "Score mínimo",
+    sortLabel: "Ordenar por", sortComposite: "Composite Score", sortDrawdown: "% Caída desde máximo",
+    sortRoe: "ROE", sortRevGrowth: "Crecimiento de ingresos",
+    tabScore: "Composite Score", tabPillars: "Desglose por Pilar", tabScatter: "Mapa de Oportunidades",
+    chartScoreTitle: "Composite Score por Ticker", chartScoreXAxis: "Composite Score (0-100)",
+    chartPillarsTitle: "Desglose del Score por Pilar", chartPillarsXAxis: "Contribución al Composite Score",
+    chartScatterTitle: "Mapa de Oportunidades: Caída desde Máximo vs. Score",
+    chartScatterXAxis: "% de caída desde máximo de 52 semanas", chartScatterYAxis: "Composite Score",
+    zoneLabel: "Zona objetivo de caída",
+    thTicker: "Ticker", thName: "Nombre", thSector: "Sector", thPrice: "Precio",
+    thDrawdown: "% desde Máx 52s", thPeg: "PEG", thRoe: "ROE", thRevGrowth: "Rev Growth YoY",
+    thDebtEbitda: "Debt/EBITDA", thScore: "Score", thReason: "Por qué es oportunidad",
+    countBadge: (n, total) => `Mostrando ${{n}} de ${{total}} oportunidades`,
+    disclaimerText: "El rendimiento pasado no garantiza resultados futuros.",
+  }},
+  en: {{
+    title: "Investment Opportunities Dashboard",
+    subtitle: "Multi-factor quantitative screening — Value · Growth · Quality · Momentum",
+    sectorLabel: "Sector", allSectors: "All sectors", scoreLabel: "Minimum score",
+    sortLabel: "Sort by", sortComposite: "Composite Score", sortDrawdown: "% Drop from high",
+    sortRoe: "ROE", sortRevGrowth: "Revenue growth",
+    tabScore: "Composite Score", tabPillars: "Pillar Breakdown", tabScatter: "Opportunity Map",
+    chartScoreTitle: "Composite Score by Ticker", chartScoreXAxis: "Composite Score (0-100)",
+    chartPillarsTitle: "Score Breakdown by Pillar", chartPillarsXAxis: "Contribution to Composite Score",
+    chartScatterTitle: "Opportunity Map: Drop from High vs. Score",
+    chartScatterXAxis: "% drop from 52-week high", chartScatterYAxis: "Composite Score",
+    zoneLabel: "Target drawdown zone",
+    thTicker: "Ticker", thName: "Name", thSector: "Sector", thPrice: "Price",
+    thDrawdown: "% from 52W High", thPeg: "PEG", thRoe: "ROE", thRevGrowth: "Rev Growth YoY",
+    thDebtEbitda: "Debt/EBITDA", thScore: "Score", thReason: "Why it's an opportunity",
+    countBadge: (n, total) => `Showing ${{n}} of ${{total}} opportunities`,
+    disclaimerText: "Past performance does not guarantee future results.",
+  }},
+  fr: {{
+    title: "Tableau de Bord des Opportunités d'Investissement",
+    subtitle: "Filtrage quantitatif multifactoriel — Value · Growth · Quality · Momentum",
+    sectorLabel: "Secteur", allSectors: "Tous les secteurs", scoreLabel: "Score minimum",
+    sortLabel: "Trier par", sortComposite: "Score composite", sortDrawdown: "% de baisse depuis le sommet",
+    sortRoe: "ROE", sortRevGrowth: "Croissance du chiffre d'affaires",
+    tabScore: "Score composite", tabPillars: "Répartition par pilier", tabScatter: "Carte des opportunités",
+    chartScoreTitle: "Score composite par action", chartScoreXAxis: "Score composite (0-100)",
+    chartPillarsTitle: "Répartition du score par pilier", chartPillarsXAxis: "Contribution au score composite",
+    chartScatterTitle: "Carte des opportunités : baisse depuis le sommet vs. score",
+    chartScatterXAxis: "% de baisse depuis le sommet sur 52 semaines", chartScatterYAxis: "Score composite",
+    zoneLabel: "Zone cible de baisse",
+    thTicker: "Symbole", thName: "Nom", thSector: "Secteur", thPrice: "Prix",
+    thDrawdown: "% depuis sommet 52s", thPeg: "PEG", thRoe: "ROE", thRevGrowth: "Croissance CA",
+    thDebtEbitda: "Dette/EBITDA", thScore: "Score", thReason: "Pourquoi c'est une opportunité",
+    countBadge: (n, total) => `Affichage de ${{n}} sur ${{total}} opportunités`,
+    disclaimerText: "Les performances passées ne garantissent pas les résultats futurs.",
+  }},
+}};
+let currentLang = 'es';
+
 const ALL_DATA = {data_json};
 const SECTORS = {sectors_json};
 const WEIGHTS = {weights_json};
@@ -491,6 +562,7 @@ function getFilteredData() {{
 }}
 
 function renderScoreChart(data) {{
+  const t = TRANSLATIONS[currentLang];
   const rev = [...data].reverse();
   Plotly.newPlot('chart-score', [{{
     x: rev.map(d => d.compositeScore), y: rev.map(d => d.ticker),
@@ -498,13 +570,14 @@ function renderScoreChart(data) {{
     marker: {{ color: rev.map(d => d.compositeScore), colorscale: 'Tealgrn' }},
     text: rev.map(d => d.compositeScore), textposition: 'outside',
   }}], {{
-    title: 'Composite Score por Ticker', xaxis: {{ title: 'Composite Score (0-100)' }},
+    title: t.chartScoreTitle, xaxis: {{ title: t.chartScoreXAxis }},
     height: Math.max(400, 30 * rev.length), template: 'plotly_white',
     margin: {{ l: 80 }},
   }}, {{ responsive: true }});
 }}
 
 function renderPillarsChart(data) {{
+  const t = TRANSLATIONS[currentLang];
   const rev = [...data].reverse();
   const pillars = [
     {{ key: 'valueScore', name: 'Value', color: '#2E86AB', w: WEIGHTS.value }},
@@ -517,31 +590,37 @@ function renderPillarsChart(data) {{
     name: p.name, type: 'bar', orientation: 'h', marker: {{ color: p.color }},
   }}));
   Plotly.newPlot('chart-pillars', traces, {{
-    barmode: 'stack', title: 'Desglose del Score por Pilar',
-    xaxis: {{ title: 'Contribución al Composite Score' }},
+    barmode: 'stack', title: t.chartPillarsTitle,
+    xaxis: {{ title: t.chartPillarsXAxis }},
     height: Math.max(400, 30 * rev.length), template: 'plotly_white',
     legend: {{ orientation: 'h', y: -0.15 }}, margin: {{ l: 80 }},
   }}, {{ responsive: true }});
 }}
 
 function renderScatterChart(data) {{
+  const t = TRANSLATIONS[currentLang];
   Plotly.newPlot('chart-scatter', [{{
     x: data.map(d => d.drawdown * 100), y: data.map(d => d.compositeScore),
     text: data.map(d => d.ticker), mode: 'markers+text', textposition: 'top center',
     marker: {{ size: 14, color: data.map(d => d.compositeScore), colorscale: 'Tealgrn', showscale: true }},
     type: 'scatter',
   }}], {{
-    title: 'Mapa de Oportunidades: Caída desde Máximo vs. Score',
-    xaxis: {{ title: '% de caída desde máximo de 52 semanas' }},
-    yaxis: {{ title: 'Composite Score' }}, template: 'plotly_white', height: 500,
+    title: t.chartScatterTitle,
+    xaxis: {{ title: t.chartScatterXAxis }},
+    yaxis: {{ title: t.chartScatterYAxis }}, template: 'plotly_white', height: 500,
     shapes: [{{
       type: 'rect', x0: DRAWDOWN_MIN, x1: DRAWDOWN_MAX, y0: 0, y1: 100,
       fillcolor: 'green', opacity: 0.08, line: {{ width: 0 }},
+    }}],
+    annotations: [{{
+      x: (DRAWDOWN_MIN + DRAWDOWN_MAX) / 2, y: 98, text: t.zoneLabel,
+      showarrow: false, font: {{ size: 11, color: 'green' }},
     }}],
   }}, {{ responsive: true }});
 }}
 
 function renderTable(data) {{
+  const t = TRANSLATIONS[currentLang];
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = data.map(d => `
     <tr>
@@ -550,8 +629,7 @@ function renderTable(data) {{
       <td>${{fmtNum(d.peg)}}</td><td>${{fmtPct(d.roe)}}</td><td>${{fmtPct(d.revGrowth)}}</td>
       <td>${{fmtNum(d.debtEbitda)}}</td><td>${{d.compositeScore}}</td><td>${{d.reasons}}</td>
     </tr>`).join('');
-  document.getElementById('countBadge').textContent =
-    `Mostrando ${{data.length}} de ${{ALL_DATA.length}} oportunidades`;
+  document.getElementById('countBadge').textContent = t.countBadge(data.length, ALL_DATA.length);
 }}
 
 function applyFilters() {{
@@ -570,7 +648,48 @@ function showTab(name) {{
   }});
 }}
 
-applyFilters();
+function setLanguage(lang) {{
+  currentLang = lang;
+  const t = TRANSLATIONS[lang];
+  document.documentElement.lang = lang;
+
+  document.getElementById('txt-title').textContent = t.title;
+  document.getElementById('txt-subtitle').textContent = t.subtitle;
+  document.getElementById('txt-sectorLabel').textContent = t.sectorLabel;
+  document.getElementById('txt-allSectors').textContent = t.allSectors;
+  document.getElementById('txt-scoreLabel').textContent = t.scoreLabel;
+  document.getElementById('txt-sortLabel').textContent = t.sortLabel;
+  document.getElementById('txt-sortComposite').textContent = t.sortComposite;
+  document.getElementById('txt-sortDrawdown').textContent = t.sortDrawdown;
+  document.getElementById('txt-sortRoe').textContent = t.sortRoe;
+  document.getElementById('txt-sortRevGrowth').textContent = t.sortRevGrowth;
+
+  document.getElementById('tabBtn-score').textContent = t.tabScore;
+  document.getElementById('tabBtn-pillars').textContent = t.tabPillars;
+  document.getElementById('tabBtn-scatter').textContent = t.tabScatter;
+
+  document.getElementById('th-ticker').textContent = t.thTicker;
+  document.getElementById('th-name').textContent = t.thName;
+  document.getElementById('th-sector').textContent = t.thSector;
+  document.getElementById('th-price').textContent = t.thPrice;
+  document.getElementById('th-drawdown').textContent = t.thDrawdown;
+  document.getElementById('th-peg').textContent = t.thPeg;
+  document.getElementById('th-roe').textContent = t.thRoe;
+  document.getElementById('th-revgrowth').textContent = t.thRevGrowth;
+  document.getElementById('th-debtebitda').textContent = t.thDebtEbitda;
+  document.getElementById('th-score').textContent = t.thScore;
+  document.getElementById('th-reason').textContent = t.thReason;
+
+  document.getElementById('txt-disclaimerText').textContent = t.disclaimerText;
+
+  ['es', 'en', 'fr'].forEach(l => {{
+    document.getElementById('langBtn-' + l).classList.toggle('active', l === lang);
+  }});
+
+  applyFilters();  // vuelve a dibujar las gráficas con los títulos traducidos
+}}
+
+setLanguage('es');
 </script>
 </body>
 </html>
